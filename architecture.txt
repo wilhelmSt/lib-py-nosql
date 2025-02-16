@@ -1,0 +1,25 @@
+/library_system
+│── /app
+│   │── __init__.py
+│   │── main.py
+│   │── /configuration
+│   │   │── __init__.py
+│   │   │── database.py
+|   |   |── mongo_con.py
+│   │── /models
+│   │   │── __init__.py
+│   │   │── {}.py
+│   │── /schemas
+│   │   │── __init__.py
+│   │   │── {}.py
+│   │── /services
+│   │   │── __init__.py
+│   │   │── {}_service.py
+│   │── /routers
+│   │   │── __init__.py
+│   │   │── {}_router.py
+│── .env
+│── docker-compose.yml
+│── requirements.txt
+│── Dockerfile
+│── README.md
