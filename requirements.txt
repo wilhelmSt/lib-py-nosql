@@ -1,5 +1,5 @@
 fastapi
 uvicorn
 motor
-pydantic
+pydantic<2
 python-dotenv
