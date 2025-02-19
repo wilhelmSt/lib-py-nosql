@@ -2,7 +2,7 @@ from typing import List, Optional
 from bson import ObjectId
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from ..schemas.category import CategorySchema, CategoryResponse, UpdateCategorySchema
+from ..models.category import CategorySchema, CategoryResponse, UpdateCategorySchema
 from ..configuration.database import db
 from datetime import datetime
 
@@ -43,6 +43,9 @@ async def create_category(category: CategorySchema) -> Optional[CategoryResponse
         new_category = category.dict()
         new_category["created_at"] = new_category["updated_at"] = datetime.utcnow()
         
+        if not ObjectId.is_valid(new_category["parent_category"]):
+            del new_category["parent_category"]
+        
         result = await collection.insert_one(new_category)
     
         return CategoryResponse(id=str(result.inserted_id), **new_category)
@@ -57,6 +60,9 @@ async def update_category(category_id: str, category: UpdateCategorySchema) -> O
         
         updated_category = category.dict(exclude_unset=True)
         updated_category["updated_at"] = datetime.utcnow()
+        
+        if not ObjectId.is_valid(updated_category["parent_category"]):
+            del updated_category["parent_category"]
         
         result = await collection.update_one({"_id": ObjectId(category_id)}, {"$set": updated_category})
         
