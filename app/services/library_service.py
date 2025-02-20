@@ -7,10 +7,35 @@ from ..configuration.database import db
 
 collection = db.libraries
 
-async def get_all_libraries() -> List[LibraryResponse]:
+async def get_all_libraries(
+    page: int,
+    limit: int,
+    name: Optional[str] = None,
+    is_public: Optional[bool] = None,
+    location: Optional[str] = None,
+    establish_year: Optional[int] = None,
+    book_id: Optional[str] = None
+) -> List[LibraryResponse]:
     try:
-        libraries = await collection.find().to_list(100)
-        
+        query = {}
+
+        if name:
+            query["name"] = {"$regex": name, "$options": "i"}
+
+        if is_public is not None:
+            query["is_public"] = is_public
+
+        if location:
+            query["location"] = {"$regex": location, "$options": "i"}
+
+        if establish_year is not None:
+            query["establish_year"] = establish_year
+
+        if book_id and ObjectId.is_valid(book_id):
+            query["books"] = {"$in": [ObjectId(book_id)]}
+
+        libraries = await collection.find(query).skip((page - 1) * limit).limit(limit).to_list(limit)
+
         return [
             LibraryResponse(id=str(library["_id"]), **{k: v for k, v in library.items() if k != "_id"})
             for library in libraries
