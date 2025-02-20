@@ -2,16 +2,37 @@ from typing import List, Optional
 from bson import ObjectId
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from ..models.category import CategorySchema, CategoryResponse, UpdateCategorySchema
+from ..models.category import Category, CategoryResponse, UpdateCategorySchema
 from ..configuration.database import db
 from datetime import datetime
 
 collection = db.categories
 
-async def get_all_categories() -> List[CategoryResponse]:
-    try:    
-        categories = await collection.find().to_list(100)
-        
+async def get_all_categories(
+    page: int,
+    limit: int,
+    name: Optional[str] = None,
+    status: Optional[bool] = None,
+    min_popularity: Optional[float] = None,
+    parent_category: Optional[str] = None
+) -> List[CategoryResponse]:
+    try:
+        query = {}
+
+        if name:
+            query["name"] = {"$regex": name, "$options": "i"}
+
+        if status is not None:
+            query["status"] = status
+
+        if min_popularity is not None:
+            query["popularity_score"] = {"$gte": min_popularity}
+
+        if parent_category and ObjectId.is_valid(parent_category):
+            query["parent_category"] = ObjectId(parent_category)
+
+        categories = await collection.find(query).skip((page - 1) * limit).limit(limit).to_list(limit)
+
         return [
             CategoryResponse(id=str(cat["_id"]), **{k: v for k, v in cat.items() if k != "_id"})
             for cat in categories
@@ -38,7 +59,7 @@ async def get_category_by_id(category_id: str) -> Optional[CategoryResponse]:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
-async def create_category(category: CategorySchema) -> Optional[CategoryResponse]:
+async def create_category(category: Category) -> Optional[CategoryResponse]:
     try:
         new_category = category.dict()
         new_category["created_at"] = new_category["updated_at"] = datetime.utcnow()
