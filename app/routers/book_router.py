@@ -1,5 +1,5 @@
-from fastapi import APIRouter
-from typing import List
+from fastapi import APIRouter, Query
+from typing import List, Optional
 from app.models.book import Book, BookResponse, UpdateBookSchema
 from app.services.book_service import (
     get_all_books,
@@ -12,8 +12,20 @@ from app.services.book_service import (
 router = APIRouter()
 
 @router.get("/", response_model=List[BookResponse])
-async def get_books():
-    return await get_all_books()
+async def get_books(
+    page: int = Query(1, description="Page number, starting from 1", ge=1),
+    limit: int = Query(10, description="Number of results per page", ge=1, le=100),
+    title: Optional[str] = Query(None, description="Filter by book title"),
+    author: Optional[str] = Query(None, description="Filter by author ID"),
+    library: Optional[str] = Query(None, description="Filter by library ID")
+):
+    return await get_all_books(
+        page=page,
+        limit=limit,
+        title=title,
+        author=author,
+        library=library
+    )
 
 
 @router.get("/{book_id}", response_model=BookResponse)

@@ -7,9 +7,30 @@ from ..configuration.database import db
 
 collection = db.books
 
-async def get_all_books() -> List[BookResponse]:
+async def get_all_books(
+    page: int = 1,
+    limit: int = 10,
+    title: Optional[str] = None,
+    author: Optional[str] = None,
+    library: Optional[str] = None
+) -> List[BookResponse]:
     try:
-        books = await collection.find().to_list(100)
+        if page < 1 or limit < 1:
+            raise HTTPException(status_code=400, detail="Page and limit must be greater than zero")
+
+        skip = (page - 1) * limit
+        query = {}
+        
+        if title:
+            query["title"] = {"$regex": title, "$options": "i"}
+            
+        if author and ObjectId.is_valid(author):
+            query["author"] = ObjectId(author)
+            
+        if library and ObjectId.is_valid(library):
+            query["libraries"] = {"$in": [ObjectId(library)]}
+            
+        books = await collection.find(query).skip(skip).limit(limit).to_list(length=limit)
         
         return [
             BookResponse(id=str(book["_id"]), **{k: v for k, v in book.items() if k != "_id"})
