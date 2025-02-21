@@ -27,7 +27,9 @@ async def get_books(
         limit=limit,
         title=title,
         author=author,
-        library=library
+        library=library,
+        start_date=start_date,
+        end_date=end_date
     )
 
 
@@ -49,3 +51,11 @@ async def edit_book(book_id: str, book: UpdateBookSchema):
 @router.delete("/{book_id}")
 async def remove_book(book_id: str):
     return await delete_book(book_id)
+
+
+@router.get("/list-books-authors")
+async def get_books_with_authors(
+    page: int = Query(1, description="Page number, starting from 1", ge=1),
+    limit: int = Query(10, description="Number of results per page", ge=1, le=100),
+):
+    return await get_books_with_authors(page=page, limit=limit)

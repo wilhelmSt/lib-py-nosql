@@ -153,3 +153,48 @@ async def add_libraries_to_book(book_id: str, library_ids: List[str]) -> dict:
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating book: {str(e)}")
+    
+
+async def get_books_with_authors(page: int = 1, limit: int = 10) -> List[BookResponse]:
+    try:
+        if page < 1 or limit < 1:
+            raise HTTPException(status_code=400, detail="Page and limit must be greater than zero")
+
+        skip = (page - 1) * limit
+
+        books_with_authors = await collection.aggregate([
+            {
+                "$lookup": {
+                    "from": "authors",
+                    "localField": "author",
+                    "foreignField": "_id",
+                    "as": "author_details"
+                }
+            },
+            {
+                "$unwind": {
+                    "path": "$author_details",
+                    "preserveNullAndEmptyArrays": True
+                }
+            },
+            {
+                "$skip": skip
+            },
+            {
+                "$limit": limit
+            }
+        ]).to_list(length=limit)
+
+        return [
+            BookResponse(
+                id=str(book["_id"]),
+                title=book["title"],
+                author_name=book["author_details"]["name"],
+                published_date=book["published_date"],
+                isbn=book["isbn"],
+                libraries=book["libraries"]
+            )
+            for book in books_with_authors
+        ]
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
