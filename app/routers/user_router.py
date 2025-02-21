@@ -6,7 +6,8 @@ from app.services.user_service import (
     get_user_by_id,
     create_user,
     update_user,
-    delete_user
+    delete_user,
+    get_users_with_rental_books_and_libraries
 )
 
 router = APIRouter()
@@ -52,3 +53,10 @@ async def edit_user(user_id: str, user: UpdateUserSchema):
 @router.delete("/{user_id}")
 async def remove_user(user_id: str):
     return await delete_user(user_id)
+
+@router.get("/list-rental-books-libraries", response_model=UserResponse)
+async def list_rental_books_libraries(
+    page: int = Query(1, description="Page number, starting from 1", ge=1),
+    limit: int = Query(10, description="Number of results per page", ge=1, le=100),
+):
+    return await get_users_with_rental_books_and_libraries(page=page, limit=limit)
