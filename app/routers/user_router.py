@@ -1,5 +1,5 @@
-from fastapi import APIRouter
-from typing import List
+from fastapi import APIRouter, Query
+from typing import List, Optional
 from app.models.user import User, UserResponse, UpdateUserSchema
 from app.services.user_service import (
     get_all_users,
@@ -12,8 +12,26 @@ from app.services.user_service import (
 router = APIRouter()
 
 @router.get("/", response_model=List[UserResponse])
-async def get_users():
-    return await get_all_users()
+async def get_users(
+    page: int = Query(1, description="Page number, starting from 1", ge=1),
+    limit: int = Query(10, description="Number of results per page", ge=1, le=100),
+    name: Optional[str] = Query(None, description="Filter by user name"),
+    fav_library: Optional[str] = Query(None, description="Filter by favorite library"),
+    fav_category: Optional[str] = Query(None, description="Filter by favorite category"),
+    fav_author: Optional[str] = Query(None, description="Filter by favorite author"),
+    readed_book: Optional[str] = Query(None, description="Filter by readed book"),
+    rental_book: Optional[str] = Query(None, description="Filter by rented book")
+):
+    return await get_all_users(
+        page=page,
+        limit=limit,
+        name=name,
+        fav_library=fav_library,
+        fav_category=fav_category,
+        fav_author=fav_author,
+        readed_book=readed_book,
+        rental_book=rental_book
+    )
 
 
 @router.get("/{user_id}", response_model=UserResponse)

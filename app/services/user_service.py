@@ -7,9 +7,38 @@ from ..configuration.database import db
 
 collection = db.users
 
-async def get_all_users() -> List[UserResponse]:
+async def get_all_users(
+    page: int,
+    limit: int,
+    name: Optional[str] = None,
+    fav_library: Optional[str] = None,
+    fav_category: Optional[str] = None,
+    fav_author: Optional[str] = None,
+    readed_book: Optional[str] = None,
+    rental_book: Optional[str] = None
+) -> List[UserResponse]:
     try:
-        users = await collection.find().to_list(100)
+        query = {}
+
+        if name:
+            query["name"] = {"$regex": name, "$options": "i"}
+
+        if fav_library and ObjectId.is_valid(fav_library):
+            query["fav_library"] = ObjectId(fav_library)
+
+        if fav_category and ObjectId.is_valid(fav_category):
+            query["fav_category"] = ObjectId(fav_category)
+
+        if fav_author and ObjectId.is_valid(fav_author):
+            query["fav_author"] = ObjectId(fav_author)
+
+        if readed_book and ObjectId.is_valid(readed_book):
+            query["readed_books"] = {"$in": [ObjectId(readed_book)]}
+
+        if rental_book and ObjectId.is_valid(rental_book):
+            query["rental_books"] = {"$in": [ObjectId(rental_book)]}
+
+        users = await collection.find(query).skip((page - 1) * limit).limit(limit).to_list(limit)
 
         return [
             UserResponse(id=str(user["_id"]), **{k: v for k, v in user.items() if k != "_id"})
