@@ -1,6 +1,6 @@
 from fastapi import FastAPI
-from app.configuration.database import db, client
-from app.routers import book_router, library_router, user_router, category_router
+from app.configuration.database import client
+from app.routers import book_router, library_router, user_router, category_router, author_router
 
 app = FastAPI(
     title="Library System API",
@@ -10,9 +10,10 @@ app = FastAPI(
 )
 
 # -- ROUTERS --
-# app.include_router(book_router.router, prefix="/books", tags=["Books"])
-# app.include_router(library_router.router, prefix="/libraries", tags=["Libraries"])
-# app.include_router(user_router.router, prefix="/users", tags=["Users"])
+app.include_router(book_router.router, prefix="/books", tags=["Books"])
+app.include_router(library_router.router, prefix="/libraries", tags=["Libraries"])
+app.include_router(user_router.router, prefix="/users", tags=["Users"])
+app.include_router(author_router.router, prefix="/authors", tags=["Authors"])
 app.include_router(category_router.router, prefix="/categories", tags=["Categories"])
 
 @app.on_event("startup")

@@ -6,11 +6,16 @@ class User(BaseModel):
     name: str = Field(..., min_length=3, max_length=100)
     readed_books: List[str] = []
     rental_books: List[str] = []
-    birthdate: date = None
-    fav_library: str = None
-    fav_category: str = None
-    fav_author: str = None
+    birthdate: str = None
+    fav_library: Optional[str] = None
+    fav_category: Optional[str] = None
+    fav_author: Optional[str] = None
     
+    def __init__(self, **data):
+        if "birthdate" in data and isinstance(data["birthdate"], date):
+            data["birthdate"] = data["birthdate"].strftime("%Y-%m-%d")
+        super().__init__(**data)
+
 
 class UserResponse(BaseModel):
     id: str
