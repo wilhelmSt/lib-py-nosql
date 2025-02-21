@@ -12,6 +12,14 @@ from app.services.book_service import (
 
 router = APIRouter()
 
+@router.get("/list-books-authors")
+async def get_books_with_authors(
+    page: int = Query(1, description="Page number, starting from 1", ge=1),
+    limit: int = Query(10, description="Number of results per page", ge=1, le=100),
+):
+    return await get_books_with_authors(page=page, limit=limit)
+
+
 @router.get("/", response_model=List[BookResponse])
 async def get_books(
     page: int = Query(1, description="Page number, starting from 1", ge=1),
@@ -51,11 +59,3 @@ async def edit_book(book_id: str, book: UpdateBookSchema):
 @router.delete("/{book_id}")
 async def remove_book(book_id: str):
     return await delete_book(book_id)
-
-
-@router.get("/list-books-authors")
-async def get_books_with_authors(
-    page: int = Query(1, description="Page number, starting from 1", ge=1),
-    limit: int = Query(10, description="Number of results per page", ge=1, le=100),
-):
-    return await get_books_with_authors(page=page, limit=limit)
