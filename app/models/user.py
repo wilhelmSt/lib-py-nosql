@@ -39,3 +39,22 @@ class UpdateUserSchema(BaseModel):
 class PopulateBooksUserSchema(BaseModel):
     readed_books: Optional[List[str]] = []
     rental_books: Optional[List[str]] = []
+    
+
+class ULibraryAResponse(BaseModel):
+    id: str
+    name: str
+
+class UBookAResponse(BaseModel):
+    id: str
+    title: str
+    libraries: List[ULibraryAResponse]
+class UserResponseAggregate(BaseModel):
+    id: str
+    name: str
+    readed_books: List[str]
+    rental_books: List[UBookAResponse]
+    birthdate: Optional[str] = None
+    fav_library: Optional[str] = None
+    fav_category: Optional[str] = None
+    fav_author: Optional[str] = None

@@ -2,7 +2,15 @@ from typing import List, Optional
 from bson import ObjectId
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from ..models.user import User, UserResponse, UpdateUserSchema, PopulateBooksUserSchema
+from ..models.user import (
+    User,
+    UserResponse,
+    UpdateUserSchema,
+    PopulateBooksUserSchema,
+    UserResponseAggregate,
+    UBookAResponse,
+    ULibraryAResponse
+)
 from ..configuration.database import db
 
 collection = db.users
@@ -117,7 +125,7 @@ async def delete_user(user_id: str) -> dict:
         raise HTTPException(status_code=500, detail=f"Error deleting user: {str(e)}")
 
 
-async def get_users_with_rental_books_and_libraries(page: int = 1, limit: int = 10) -> List[UserResponse]:
+async def get_users_with_rental_books_and_libraries(page: int = 1, limit: int = 10) -> List[UserResponseAggregate]:
     try:
         if page < 1 or limit < 1:
             raise HTTPException(status_code=400, detail="Page and limit must be greater than zero")
@@ -125,6 +133,28 @@ async def get_users_with_rental_books_and_libraries(page: int = 1, limit: int = 
         skip = (page - 1) * limit
 
         users_with_books_and_libraries = await collection.aggregate([
+            {
+                "$match": {  
+                    "rental_books": {"$exists": True, "$not": {"$size": 0}}  
+                }
+            },
+            {
+                "$addFields": {
+                    "rental_books": {
+                        "$map": {
+                            "input": { "$ifNull": ["$rental_books", []] },
+                            "as": "book_id",
+                            "in": {
+                                "$cond": {
+                                    "if": { "$eq": [{ "$type": "$$book_id" }, "string"] },  
+                                    "then": { "$toObjectId": "$$book_id" },
+                                    "else": "$$book_id" 
+                                }
+                            }
+                        }
+                    }
+                }
+            },
             {
                 "$lookup": {
                     "from": "books", 
@@ -134,23 +164,11 @@ async def get_users_with_rental_books_and_libraries(page: int = 1, limit: int = 
                 }
             },
             {
-                "$unwind": {
-                    "path": "$rented_books",
-                    "preserveNullAndEmptyArrays": True
-                }
-            },
-            {
                 "$lookup": {
                     "from": "libraries",
-                    "localField": "rented_books.libraries",
+                    "localField": "rented_books.libraries", 
                     "foreignField": "_id",
                     "as": "book_libraries"
-                }
-            },
-            {
-                "$unwind": {
-                    "path": "$book_libraries",
-                    "preserveNullAndEmptyArrays": True
                 }
             },
             {
@@ -161,17 +179,26 @@ async def get_users_with_rental_books_and_libraries(page: int = 1, limit: int = 
             }
         ]).to_list(length=limit)
 
+        if not users_with_books_and_libraries:
+            raise HTTPException(status_code=404, detail="No users found")
+
         return [
-            UserResponse(
+            UserResponseAggregate(
                 id=str(user["_id"]),
-                name=user["name"],
-                rented_books=[{
-                    "book_title": user["rented_books"]["title"],
-                    "library_name": user["book_libraries"]["name"]
-                }]
+                name=user.get("name", "Sem Nome"),
+                readed_books=[str(book) for book in user.get("readed_books", [])],
+                rental_books=[UBookAResponse(
+                    id=str(book["_id"]),
+                    title=book.get("title", "Título Desconhecido"),
+                    libraries=[ULibraryAResponse(
+                        id=str(library["_id"]),
+                        name=library.get("name", "Biblioteca Desconhecida")
+                    ) for library in user.get("book_libraries", [])]
+                ) for book in user.get("rented_books", [])]
             )
             for user in users_with_books_and_libraries
         ]
+    
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
