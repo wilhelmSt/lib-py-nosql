@@ -3,7 +3,7 @@ from bson import ObjectId
 from datetime import date
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from ..models.book import Book, BookResponse, UpdateBookSchema
+from ..models.book import Book, BookResponse, UpdateBookSchema, BookAuthorResponse, BAuthorResponse
 from ..configuration.database import db
 
 collection = db.books
@@ -173,7 +173,7 @@ async def add_libraries_to_book(book_id: str, library_ids: List[str]) -> dict:
         raise HTTPException(status_code=500, detail=f"Error updating book: {str(e)}")
     
 
-async def get_books_with_authors(page: int = 1, limit: int = 10) -> List[BookResponse]:
+async def list_books_with_authors(page: int = 1, limit: int = 10) -> List[BookAuthorResponse]:
     try:
         if page < 1 or limit < 1:
             raise HTTPException(status_code=400, detail="Page and limit must be greater than zero")
@@ -204,13 +204,17 @@ async def get_books_with_authors(page: int = 1, limit: int = 10) -> List[BookRes
         ]).to_list(length=limit)
 
         return [
-            BookResponse(
+            BookAuthorResponse(
                 id=str(book["_id"]),
-                title=book["title"],
-                author_name=book["author_details"]["name"],
-                published_date=book["published_date"],
-                isbn=book["isbn"],
-                libraries=book["libraries"]
+                title=book.get("title"),
+                author=BAuthorResponse(
+                    id=str(book.get("author_details", {}).get("_id")),
+                    name=str(book.get("author_details").get("name")),
+                    nationality=str(book.get("author_details").get("nationality"))
+                ) if book.get("author_details") else None,
+                published_date=book.get("published_date"),
+                isbn=book.get("isbn"),
+                libraries=book.get("libraries", [])
             )
             for book in books_with_authors
         ]

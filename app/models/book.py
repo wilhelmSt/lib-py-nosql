@@ -22,7 +22,7 @@ class BookResponse(BaseModel):
     title: Optional[str] = Field(..., min_length=3, max_length=100)
     author: Optional[str] = None
     category: Optional[str] = None
-    published_date: Optional[date] = None
+    published_date: Optional[str] = None
     isbn: Optional[str] = Field(..., min_length=10, max_length=13)
     libraries: Optional[List[str]] = None
     
@@ -36,6 +36,16 @@ class BookResponse(BaseModel):
         if "libraries" in data and isinstance(data["libraries"], list):
             data["libraries"] = [str(lib) for lib in data["libraries"]]
         super().__init__(**data)
+
+
+class BAuthorResponse(BaseModel):
+    id: str
+    name: Optional[str] = Field(..., min_length=3, max_length=100)
+    nationality: Optional[str] = Field(..., min_length=3, max_length=100)
+
+
+class BookAuthorResponse(BookResponse):
+    author: Optional[BAuthorResponse] = None
 
 
 class UpdateBookSchema(BaseModel):

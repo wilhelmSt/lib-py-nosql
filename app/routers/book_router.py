@@ -7,7 +7,8 @@ from app.services.book_service import (
     get_book_by_id,
     create_book,
     update_book,
-    delete_book
+    delete_book,
+    list_books_with_authors
 )
 
 router = APIRouter()
@@ -17,7 +18,7 @@ async def get_books_with_authors(
     page: int = Query(1, description="Page number, starting from 1", ge=1),
     limit: int = Query(10, description="Number of results per page", ge=1, le=100),
 ):
-    return await get_books_with_authors(page=page, limit=limit)
+    return await list_books_with_authors(page=page, limit=limit)
 
 
 @router.get("/", response_model=List[BookResponse])
