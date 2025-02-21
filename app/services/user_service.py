@@ -2,7 +2,7 @@ from typing import List, Optional
 from bson import ObjectId
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
-from ..models.user import User, UserResponse, UpdateUserSchema
+from ..models.user import User, UserResponse, UpdateUserSchema, PopulateBooksUserSchema
 from ..configuration.database import db
 
 collection = db.users
@@ -174,3 +174,37 @@ async def get_users_with_rental_books_and_libraries(page: int = 1, limit: int = 
         ]
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
+async def populate_books(user_id: str, user: PopulateBooksUserSchema) -> dict:
+    readed_books = user.readed_books or []
+    rental_books = user.rental_books or []
+    
+    if not ObjectId.is_valid(user_id):
+        raise HTTPException(status_code=400, detail="ID inválido")
+    
+    valid_readed_books = [
+        ObjectId(book_id) for book_id in readed_books if ObjectId.is_valid(book_id)
+    ]
+
+    valid_rental_books = [
+        ObjectId(book_id) for book_id in rental_books if ObjectId.is_valid(book_id)
+    ]
+
+    if not valid_readed_books and not valid_rental_books:
+        raise HTTPException(status_code=400, detail="Nenhum ID de livro válido fornecido")
+
+    update_query = {"$addToSet": {}}
+
+    if valid_readed_books:
+        update_query["$addToSet"]["readed_books"] = {"$each": valid_readed_books}
+
+    if valid_rental_books:
+        update_query["$addToSet"]["rental_books"] = {"$each": valid_rental_books}
+
+    result = await collection.update_one({"_id": ObjectId(user_id)}, update_query)
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado ou livros já adicionados")
+
+    return {"message": "Livros adicionados com sucesso"}

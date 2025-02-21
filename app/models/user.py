@@ -35,3 +35,7 @@ class UpdateUserSchema(BaseModel):
     fav_category: Optional[str] = None
     fav_author: Optional[str] = None
 
+
+class PopulateBooksUserSchema(BaseModel):
+    readed_books: Optional[List[str]] = []
+    rental_books: Optional[List[str]] = []

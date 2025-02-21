@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Query
 from typing import List, Optional
-from app.models.user import User, UserResponse, UpdateUserSchema
+from app.models.user import User, UserResponse, UpdateUserSchema, PopulateBooksUserSchema
 from app.services.user_service import (
     get_all_users,
     get_user_by_id,
     create_user,
     update_user,
     delete_user,
-    get_users_with_rental_books_and_libraries
+    get_users_with_rental_books_and_libraries,
+    populate_books
 )
 
 router = APIRouter()
@@ -60,3 +61,9 @@ async def list_rental_books_libraries(
     limit: int = Query(10, description="Number of results per page", ge=1, le=100),
 ):
     return await get_users_with_rental_books_and_libraries(page=page, limit=limit)
+
+
+@router.post("/{user_id}/populate-books")
+async def add_readed_book(user_id: str, user: PopulateBooksUserSchema):
+    return await populate_books(user_id, user)
+
