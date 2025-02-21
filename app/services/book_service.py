@@ -1,5 +1,6 @@
 from typing import List, Optional
 from bson import ObjectId
+from datetime import date
 from fastapi import HTTPException
 from fastapi.responses import JSONResponse
 from ..models.book import Book, BookResponse, UpdateBookSchema
@@ -12,7 +13,9 @@ async def get_all_books(
     limit: int = 10,
     title: Optional[str] = None,
     author: Optional[str] = None,
-    library: Optional[str] = None
+    library: Optional[str] = None,
+    start_date: Optional[date] = None,
+    end_date: Optional[date] = None
 ) -> List[BookResponse]:
     try:
         if page < 1 or limit < 1:
@@ -29,6 +32,14 @@ async def get_all_books(
             
         if library and ObjectId.is_valid(library):
             query["libraries"] = {"$in": [ObjectId(library)]}
+        
+        if start_date:
+            query["published_date"] = {"$gte": start_date}
+            
+        if end_date:
+            if "published_date" not in query:
+                query["published_date"] = {}
+            query["published_date"]["$lte"] = end_date
             
         books = await collection.find(query).skip(skip).limit(limit).to_list(length=limit)
         

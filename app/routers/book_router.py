@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Query
 from typing import List, Optional
+from datetime import date
 from app.models.book import Book, BookResponse, UpdateBookSchema
 from app.services.book_service import (
     get_all_books,
@@ -17,7 +18,9 @@ async def get_books(
     limit: int = Query(10, description="Number of results per page", ge=1, le=100),
     title: Optional[str] = Query(None, description="Filter by book title"),
     author: Optional[str] = Query(None, description="Filter by author ID"),
-    library: Optional[str] = Query(None, description="Filter by library ID")
+    library: Optional[str] = Query(None, description="Filter by library ID"),
+    start_date: Optional[date] = Query(None, description="Filter by start date"),
+    end_date: Optional[date] = Query(None, description="Filter by end date"),
 ):
     return await get_all_books(
         page=page,
