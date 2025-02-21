@@ -73,17 +73,35 @@ async def create_book(book: Book) -> Optional[BookResponse]:
     try:
         new_book = book.dict()
         
-        if new_book.get("author"):
-            new_book["author"] = ObjectId(new_book["author"])
-        
-        if new_book.get("libraries"):
-            new_book["libraries"] = [
-                ObjectId(lib_id) for lib_id in new_book["libraries"] if ObjectId.is_valid(lib_id)
-            ]
+        author_id = new_book.get("author")
+        if author_id and ObjectId.is_valid(author_id):
+            new_book["author"] = ObjectId(author_id)
+            
+        category_id = new_book.get("category")
+        if category_id and ObjectId.is_valid(category_id):
+            new_book["category"] = ObjectId(category_id)
+            
+        library_ids = new_book.get("libraries", [])
+        new_book["libraries"] = [
+            ObjectId(lib_id) for lib_id in library_ids if ObjectId.is_valid(lib_id)
+        ]
         
         result = await collection.insert_one(new_book)
+        book_id = result.inserted_id
         
-        return BookResponse(id=str(result.inserted_id), **new_book)
+        if author_id and ObjectId.is_valid(author_id):
+            await db.authors.update_one(
+                {"_id": ObjectId(author_id)},
+                {"$addToSet": {"written_books": book_id}}
+            )
+            
+        if library_ids:
+            await db.libraries.update_many(
+                {"_id": {"$in": new_book["libraries"]}},
+                {"$addToSet": {"books": book_id}}
+            )
+        
+        return BookResponse(id=str(book_id), **new_book)
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error creating book: {str(e)}")
 
